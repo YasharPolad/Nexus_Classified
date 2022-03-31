@@ -1,6 +1,12 @@
 from distutils.command.upload import upload
+from email.policy import default
+from random import choices
+from unicodedata import category
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
+from ckeditor.fields import RichTextField
+
 
 # import gettext
 
@@ -25,3 +31,43 @@ class Category(models.Model):
         if not self.parent_category and not self.icon:
             raise ValidationError({"icon": "All HEAD classes must have icons"})
         super(Category, self).clean()
+
+
+class AdPost(models.Model):
+
+    ConditionChoices = [
+        ("BRN", "Brand New"),
+        ("NOB", "New Open Box"),
+        ("ULN", "Used - Like New"),
+        ("UGC", "Used - Good Condition"),
+        ("UPC", "Used - Poor Condition"), 
+    ]
+
+    StatusChoices = [
+        ("A", "Active"),
+        ("S", "Sold"),
+        ("E", "Expired"),
+        ("F", "Featured"),
+        ("P", "Published"),
+    ]
+    
+    name = models.CharField(max_length=200)
+    adpost_id = models.SlugField()
+    price = models.FloatField()
+    category = models.ForeignKey("Category", on_delete=models.SET_NULL, related_name="posts", null = True)
+    posted_by = models.ForeignKey(get_user_model(), related_name="posts", on_delete = models.CASCADE)
+    discount_possible = models.BooleanField(default=True)
+    condition = models.CharField(choices = ConditionChoices, max_length = 3)
+    brand_name = models.CharField(blank = True, null = True, max_length = 100)
+    view_count = models.PositiveIntegerField()
+    details = RichTextField()
+    specifications = models.JSONField(default = list)
+    status = models.CharField(choices = StatusChoices, max_length = 1)
+
+    def __str__(self):
+        return f"{self.name} - {self.status} - {self.price} AZN"
+
+
+class AdPostImage(models.Model):
+    image = models.ImageField(upload_to = "adpostimages/")
+    adpost = models.ForeignKey("AdPost", on_delete = models.CASCADE, related_name = "adpostimages")
