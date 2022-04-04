@@ -3,6 +3,15 @@ from .models import Category, AdPost, AdPostImage
 
 # Register your models here.
 admin.site.register(Category)
-admin.site.register(AdPost)
-admin.site.register(AdPostImage)
+
+
+class AdPostImageInline(admin.StackedInline):
+    model = AdPostImage
+    fields = ('image',)
+    extra = 1
+    classes = ['collapse',]
+
+@admin.register(AdPost)
+class AdPostAdmin(admin.ModelAdmin):
+    inlines = [AdPostImageInline,]
 

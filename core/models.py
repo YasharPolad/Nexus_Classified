@@ -6,6 +6,8 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from ckeditor.fields import RichTextField
+from django.utils.text import slugify
+import uuid
 
 
 # import gettext
@@ -52,22 +54,31 @@ class AdPost(models.Model):
     ]
     
     name = models.CharField(max_length=200)
-    adpost_id = models.SlugField()
+    slug = models.SlugField(blank = True, null = True)
     price = models.FloatField()
     category = models.ForeignKey("Category", on_delete=models.SET_NULL, related_name="posts", null = True)
     posted_by = models.ForeignKey(get_user_model(), related_name="posts", on_delete = models.CASCADE)
     discount_possible = models.BooleanField(default=True)
     condition = models.CharField(choices = ConditionChoices, max_length = 3)
     brand_name = models.CharField(blank = True, null = True, max_length = 100)
-    view_count = models.PositiveIntegerField()
-    details = RichTextField()
-    specifications = models.JSONField(default = list)
+    view_count = models.PositiveIntegerField(blank = True, null = True)
+    details = RichTextField(blank = True)
+    specifications = models.JSONField(default = list, blank = True)
     status = models.CharField(choices = StatusChoices, max_length = 1)
 
     def __str__(self):
         return f"{self.name} - {self.status} - {self.price} AZN"
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            to_slug =  str(self.name) + '-' + str(self.posted_by.username) + '-' + str(uuid.uuid4())[:6].replace("-", "")
+            self.slug = slugify(to_slug.lower())
+        super().save(*args, **kwargs)
+
 
 class AdPostImage(models.Model):
     image = models.ImageField(upload_to = "adpostimages/")
     adpost = models.ForeignKey("AdPost", on_delete = models.CASCADE, related_name = "adpostimages")
+
+    def __str__(self):
+        return self.image.url.replace("/media/adpostimages/", "")
