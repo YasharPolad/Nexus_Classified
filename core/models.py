@@ -1,7 +1,3 @@
-from distutils.command.upload import upload
-from email.policy import default
-from random import choices
-from unicodedata import category
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
@@ -82,3 +78,74 @@ class AdPostImage(models.Model):
 
     def __str__(self):
         return self.image.url.replace("/media/adpostimages/", "")
+
+
+class WebsiteSettings(models.Model):
+    logo_header = models.ImageField(upload_to = "logo/", default = "logo.png")
+    logo_footer = models.ImageField(upload_to = "logo/", default = "logo.png")
+    website_name = models.CharField(max_length = 100)
+    phone_main = models.CharField(max_length=20, verbose_name = "Main Phone Number")
+    phone_support = models.CharField(max_length=20, verbose_name = "Support Number", blank = True, null = True)
+    email_main = models.EmailField(verbose_name = "Main Email Address")
+    email_support = models.EmailField(verbose_name = "Support Email Address", null = True, blank = True)
+    social_accounts = models.ManyToManyField("SocialAccounts", blank = True)
+    about_text = RichTextField(null = True, blank = True)
+    address = RichTextField (null = True, blank = True)
+
+    created_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now = True)
+
+    class Meta:
+        verbose_name_plural = "Website Settings"
+
+    def active_social_accounts(self):
+        return self.social_accounts.filter(is_active = True)
+
+
+class SocialAccounts(models.Model):
+    name = models.CharField(max_length=30)
+    icon_name = models.CharField(max_length=30)
+    order = models.PositiveSmallIntegerField()
+    link = models.URLField()
+    is_active = models.BooleanField(default = True)
+
+    created_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now = True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ["order"] 
+        verbose_name_plural = "Social Accounts"  
+
+class HeaderQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(is_active = True)
+    
+    def footer(self):
+        return self.filter(is_active = True, is_footer = True)
+
+
+class HeaderFields(models.Model):
+    name = models.CharField(max_length = 30)
+    link = models.URLField()
+    order = models.SmallIntegerField()
+    parent = models.ForeignKey("self", related_name = "sub_fields", on_delete = models.CASCADE, blank = True, null = True)
+    is_active = models.BooleanField(default = True)
+    is_footer = models.BooleanField(default = False)
+
+    created_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now = True)
+    
+    items = HeaderQuerySet().as_manager()
+
+    def __str__(self):
+        if self.parent:
+            return f"{self.order} {self.name} ({self.parent.name})"
+        return f"{self.order} {self.name}"          
+
+    class Meta:
+        verbose_name_plural = "Header Fields"      
+
+

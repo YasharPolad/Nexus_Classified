@@ -1,8 +1,10 @@
 from django.contrib import admin
-from .models import Category, AdPost, AdPostImage
+from .models import Category, AdPost, AdPostImage, HeaderFields, WebsiteSettings, SocialAccounts
 
 # Register your models here.
-admin.site.register(Category)
+admin.site.register(HeaderFields)
+admin.site.register(WebsiteSettings)
+admin.site.register(SocialAccounts)
 
 
 class AdPostImageInline(admin.StackedInline):
